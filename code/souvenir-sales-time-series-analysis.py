@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Beach Sales - Time Series Analysis
+# # Souvenir Sales - Time Series Analysis
 # 
 # The following is a statistical analysis on a monthly time series which collects data about the sales of a souvenir shop in Australia in the period between 1987 and 1992.
 # 
@@ -67,7 +67,7 @@ plt.xticks(rotation = 90)
 plt.show()
 
 
-# From the plot of the series, we can already grasp that it is not stationary, as the expected value is not constant over time and neither is variance, which tends to increase. In particular, we can speculate the presence of an upward trend and a seasonal effect, which is comprehensible, considering the turistical vocation of the shop.
+# From the plot of the series, we can already grasp that it is not stationary, as the expected value is not constant over time and neither is variance, which tends to increase. In particular, we can speculate the presence of an upward trend and a seasonal effect, which is comprehensible, considering the tourist vocation of the shop.
 
 # In[7]:
 
@@ -240,6 +240,8 @@ plot_acf(tseries_diff_final["sales"], lags = 24, zero = False);
 plot_pacf(tseries_diff_final["sales"], lags = 24, zero = False, method = "ywm");
 
 
+# ## Estimate ARIMA model
+
 # At this point, we should be able to estimate the values for the parameters of our ARIMA model by looking at these two plots and the spikes in them. However, the most reliable way to actually determine the parameters is using an objective procedure, for example a stepwise-like, and let a computer do it for us by choosing among many ARIMA models the "best" one, in terms of optimizing a certain indicator.
 
 # In[24]:
@@ -264,6 +266,8 @@ fit.plot_diagnostics();
 
 
 # The residuals roughly follow a normal distribution, as deduced from the histogram and the Q-Q plot, but they seem to follow a pattern in their time series, which is not good for our model. 
+
+# ## Forecast
 
 # For the last step, let's try to forecast some future values, in particular 12 more observations, and plot the result.
 

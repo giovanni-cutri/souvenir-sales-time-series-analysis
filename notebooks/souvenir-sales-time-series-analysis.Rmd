@@ -1,0 +1,210 @@
+---
+title: "Souvenir Sales Time Series Analysis"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Souvenir Sales - Time Series Analysis
+
+The following is a statistical analysis on a monthly time series which collects data about the sales of a souvenir shop in Australia in the period between 1987 and 1992.
+
+The analysis will roughly follow the Box-Jenkins method and will focus on reaching stationarity for the time series, estimating a SARIMA model and predicting future values.
+
+## Data exploration
+
+```{r}
+library(tidyverse)
+library(tsdl)
+library(tseries)
+library(tsibble)
+library(feasts)
+library(forecast)
+library(lmtest)
+library(ldsr)
+```
+
+```{r}
+data <- subset(tsdl, 12, "sales", description = "Queensland")[[1]]
+attributes(data)
+```
+
+Now that we have imported the time series, let's have a first look at its values.
+
+```{r}
+tseries <- data %>% as_tsibble() %>% head(n = 72) %>%
+  rename(date = index, sales = value)
+tseries
+```
+
+## Check for non-stationarity
+
+Let's make a plot and see what we can say about it.
+
+```{r}
+tseries %>% ggplot(aes(x = date, y = sales)) +
+  geom_line() +
+  theme_minimal()
+```
+
+From the plot of the series, we can already grasp that it is not stationary, as the expected value is not constant over time and neither is variance, which tends to increase. In particular, we can speculate the presence of an upward trend and a seasonal effect, which is comprehensible, considering the tourist vocation of the shop.
+
+```{r}
+tseries %>% gg_season(sales) +
+  theme_minimal()
+```
+
+To better appreciate it, this plot shows the data for each year separately. The values of the series are clearly higher for the latest years and there is a recurring peak in the months of March and August, followed by a valley in October.
+
+```{r}
+tseries %>% ACF(sales) %>% autoplot()
+```
+
+```{r}
+tseries %>% PACF(sales) %>% autoplot()
+```
+
+Lastly, these are the *global* and *partial autocorrelation functions* for the series. The slow decay for the ACF suggests, once again, the existence of a trend, while the spikes at lag 12 indicate a probable seasonality.
+
+To formalize our guesses, let's resort to two statistical test:
+- The **Augmented Dickey-Fuller test** tests the null hypothesis of the presence of a unit root in our time series
+- The **KPSS test** tests the null hypothesis that our data is stationary
+
+```{r}
+tseries %>% as.ts() %>% adf.test()
+```
+
+```{r}
+tseries %>% as.ts() %>% kpss.test()
+```
+
+We were expecting to reject H0 for **KPSS** and not be able to reject it for **ADF** and that's exactly what happened, looking at the p-values.
+
+## Reach stationarity
+
+In order to obtain stationarity in our time series, we need to perform a series of operations: we are going to stabilize the variance through the *Box-Cox transformation* and then apply differencing to treat trend and seasonality.
+
+```{r}
+lambda <- BoxCox.lambda(tseries$sales)
+bc <- BoxCox(tseries$sales, lambda = lambda)
+tseries.novar <- tseries %>% mutate(sales = bc)
+```
+
+```{r}
+tseries.novar %>% ggplot(aes(x = date, y = sales)) +
+  geom_line() +
+  theme_minimal() +
+  ggtitle("Time series with stabilized variance")
+```
+
+```{r}
+tseries.diff <- tseries.novar %>%
+  mutate(date = date, sales = difference(sales, lag = 1, differences = 1)) %>%
+  slice_tail(n = -1)
+tseries.diff
+```
+
+```{r}
+tseries.diff %>%
+  ggplot(aes(x = date, y = sales)) +
+  geom_line() +
+  theme_minimal() +
+  ggtitle("Time series with first order differencing")
+```
+
+The first order differencing removes trend, but leaves seasonality.
+
+```{r}
+tseries.diff.s <- tseries.novar %>%
+  mutate(sales = difference(sales, lag = 12, differences = 1)) %>%
+  slice_tail(n= -12)
+tseries.diff.s
+```
+
+```{r}
+tseries.diff.s %>%
+  ggplot(aes(x = date, y = sales)) +
+  geom_line() +
+  theme_minimal() +
+  ggtitle("Time series with first order seasonal differencing")
+```
+
+The seasonal differencing removes seasonality, but leaves trend.
+
+```{r}
+tseries.diff.final <- tseries.novar %>%
+  mutate(sales = difference(sales, lag = 1, differences = 1)) %>%
+  slice_tail(n = -1) %>%
+  mutate(sales = difference(sales, lag = 12, differences = 1)) %>%
+  slice_tail (n = -12)
+tseries.diff.final
+```
+
+```{r}
+tseries.diff.final %>%
+  ggplot(aes(x = date, y = sales)) +
+  geom_line() +
+  theme_minimal()
+```
+
+The new series should be stationary now. Let's check with our two tests.
+
+```{r}
+tseries.diff.final %>% as.ts() %>% adf.test()
+```
+
+```{r}
+tseries.diff.final %>% as.ts() %>% kpss.test()
+```
+
+Our conclusions on the null hypothesis have now switched, as we expected.
+
+Let's look at the ACF and PACF.
+
+```{r}
+tseries.diff.final %>% ACF(sales, lag_max = 24) %>% autoplot()
+```
+
+```{r}
+tseries.diff.final %>% PACF(sales, lag_max = 24) %>% autoplot()
+```
+
+## Estimate ARIMA model
+
+At this point, we should be able to estimate the values for the parameters of our ARIMA model by looking at these two plots and the spikes in them. However, the most reliable way to actually determine the parameters is using an objective procedure, for example a stepwise-like, and let a computer do it for us by choosing among many ARIMA models the "best" one, in terms of optimizing a certain indicator.
+
+```{r}
+fit <- tseries %>%
+  as.ts() %>%
+  auto.arima(start.p = 1,start.q = 1, max.p = 3, max.q = 3,
+             start.P = 0, seasonal = T, d = 1, D = 1, trace = T,
+             stepwise = T, lambda = "auto")
+```
+
+```{r}
+coeftest(fit)
+```
+
+The chosen model appears to be *ARIMA(1,1,0)(0,1,1)[12]*. Along with it, we have also got a number of diagnostic tools: we can see that the parameters are significantly different than 0.
+
+Let's look at other diagnostic measures through some plots.
+
+```{r}
+checkresiduals(fit)
+qqnorm(fit$residuals)
+```
+
+The residuals roughly follow a normal distribution, as deduced from the histogram and the Q-Q plot, but they seem to follow a pattern in their time series, which is not good for our model.
+
+## Forecast
+
+For the last step, let's try to forecast some future values, in particular 12 more observations, and plot the result.
+
+```{r}
+tseries.forecast <- forecast(fit, h = 12)
+tseries.forecast %>% autoplot()
+```
