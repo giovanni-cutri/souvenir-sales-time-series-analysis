@@ -363,56 +363,14 @@ focus on reaching stationarity for the time series, estimating a SARIMA
 model and predicting future values.</p>
 <div id="data-exploration" class="section level2">
 <h2>Data exploration</h2>
-<pre class="r"><code>options(warn = -1)
-library(tidyverse)</code></pre>
-<pre><code>## ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
-## ✔ dplyr     1.1.0     ✔ readr     2.1.4
-## ✔ forcats   1.0.0     ✔ stringr   1.5.0
-## ✔ ggplot2   3.4.1     ✔ tibble    3.2.0
-## ✔ lubridate 1.9.2     ✔ tidyr     1.3.0
-## ✔ purrr     1.0.1     
-## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
-## ✖ dplyr::filter() masks stats::filter()
-## ✖ dplyr::lag()    masks stats::lag()
-## ℹ Use the ]8;;http://conflicted.r-lib.org/conflicted package]8;; to force all conflicts to become errors</code></pre>
-<pre class="r"><code>library(tsdl)
-library(tseries)</code></pre>
-<pre><code>## Registered S3 method overwritten by &#39;quantmod&#39;:
-##   method            from
-##   as.zoo.data.frame zoo</code></pre>
-<pre class="r"><code>library(tsibble)</code></pre>
-<pre><code>## 
-## Caricamento pacchetto: &#39;tsibble&#39;
-## 
-## Il seguente oggetto è mascherato da &#39;package:lubridate&#39;:
-## 
-##     interval
-## 
-## I seguenti oggetti sono mascherati da &#39;package:base&#39;:
-## 
-##     intersect, setdiff, union</code></pre>
-<pre class="r"><code>library(feasts)</code></pre>
-<pre><code>## Caricamento del pacchetto richiesto: fabletools</code></pre>
-<pre class="r"><code>library(forecast)</code></pre>
-<pre><code>## 
-## Caricamento pacchetto: &#39;forecast&#39;
-## 
-## Il seguente oggetto è mascherato da &#39;package:fabletools&#39;:
-## 
-##     accuracy</code></pre>
-<pre class="r"><code>library(lmtest)</code></pre>
-<pre><code>## Caricamento del pacchetto richiesto: zoo
-## 
-## Caricamento pacchetto: &#39;zoo&#39;
-## 
-## Il seguente oggetto è mascherato da &#39;package:tsibble&#39;:
-## 
-##     index
-## 
-## I seguenti oggetti sono mascherati da &#39;package:base&#39;:
-## 
-##     as.Date, as.Date.numeric</code></pre>
-<pre class="r"><code>library(ldsr)</code></pre>
+<pre class="r"><code>library(tidyverse)
+library(tsdl)
+library(tseries)
+library(tsibble)
+library(feasts)
+library(forecast)
+library(lmtest)
+library(ldsr)</code></pre>
 <pre class="r"><code>data &lt;- subset(tsdl, 12, &quot;sales&quot;, description = &quot;Queensland&quot;)[[1]]
 attributes(data)</code></pre>
 <pre><code>## $tsp

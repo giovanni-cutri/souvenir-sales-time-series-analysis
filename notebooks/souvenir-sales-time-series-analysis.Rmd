@@ -6,7 +6,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
 
 # Souvenir Sales - Time Series Analysis
@@ -17,7 +17,7 @@ The analysis will roughly follow the Box-Jenkins method and will focus on reachi
 
 ## Data exploration
 
-```{r}
+```{r echo = T, results = "hide"}
 library(tidyverse)
 library(tsdl)
 library(tseries)
